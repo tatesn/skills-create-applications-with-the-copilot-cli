@@ -10,6 +10,9 @@ const {
   subtraction,
   multiplication,
   division,
+  modulo,
+  power,
+  squareRoot,
   calculate,
   normalizeOperation,
   parseNumber,
@@ -51,7 +54,39 @@ test('division: throws a clear error for division by zero', () => {
   });
 });
 
-test('normalizeOperation: supports add/sub/mul/div plus common symbols (+, -, *, x, /)', () => {
+test('modulo: computes remainders and errors on modulo by zero', () => {
+  assert.equal(modulo(10, 3), 1);
+  assert.equal(modulo(20, 5), 0);
+  assert.equal(modulo(-9, 4), -1);
+
+  assert.throws(() => modulo(1, 0), (err) => {
+    assert.ok(err instanceof Error);
+    assert.equal(err.message, 'modulo by zero');
+    assert.equal(err.code, 'MOD_BY_ZERO');
+    return true;
+  });
+});
+
+test('power: computes exponentiation results', () => {
+  assert.equal(power(2, 3), 8);
+  assert.equal(power(9, 0.5), 3);
+  assert.equal(power(5, 0), 1);
+});
+
+test('squareRoot: computes roots and errors on negative numbers', () => {
+  assert.equal(squareRoot(0), 0);
+  assert.equal(squareRoot(9), 3);
+  assert.equal(squareRoot(2), Math.sqrt(2));
+
+  assert.throws(() => squareRoot(-1), (err) => {
+    assert.ok(err instanceof Error);
+    assert.equal(err.message, 'square root of negative number');
+    assert.equal(err.code, 'NEGATIVE_SQRT');
+    return true;
+  });
+});
+
+test('normalizeOperation: supports add/sub/mul/div/mod/pow/sqrt plus common symbols', () => {
   assert.equal(normalizeOperation('add'), 'add');
   assert.equal(normalizeOperation('ADD'), 'add');
   assert.equal(normalizeOperation(' + '), 'add');
@@ -65,6 +100,14 @@ test('normalizeOperation: supports add/sub/mul/div plus common symbols (+, -, *,
 
   assert.equal(normalizeOperation('div'), 'div');
   assert.equal(normalizeOperation('/'), 'div');
+
+  assert.equal(normalizeOperation('mod'), 'mod');
+  assert.equal(normalizeOperation('%'), 'mod');
+
+  assert.equal(normalizeOperation('pow'), 'pow');
+  assert.equal(normalizeOperation('^'), 'pow');
+
+  assert.equal(normalizeOperation('sqrt'), 'sqrt');
 
   assert.equal(normalizeOperation('nope'), null);
   assert.equal(normalizeOperation(''), null);
@@ -85,11 +128,14 @@ test('calculate: routes operations correctly and rejects unsupported operations'
   assert.equal(calculate('sub', 10, 4), 6);
   assert.equal(calculate('mul', 45, 2), 90);
   assert.equal(calculate('div', 20, 5), 4);
+  assert.equal(calculate('mod', 10, 3), 1);
+  assert.equal(calculate('pow', 2, 8), 256);
+  assert.equal(calculate('sqrt', 9), 3);
 
   assert.throws(() => calculate('nope', 1, 2), /Unsupported operation/);
 });
 
-test('CLI: computes the image examples using symbols (+, -, *, /)', () => {
+test('CLI: computes operation examples including new symbols', () => {
   const scriptPath = path.join(__dirname, '..', 'calculator.js');
 
   const run = (args) => {
@@ -107,17 +153,31 @@ test('CLI: computes the image examples using symbols (+, -, *, /)', () => {
   assert.deepEqual(run(['-', '10', '4']), { status: 0, stdout: '6\n', stderr: '' });
   assert.deepEqual(run(['*', '45', '2']), { status: 0, stdout: '90\n', stderr: '' });
   assert.deepEqual(run(['/', '20', '5']), { status: 0, stdout: '4\n', stderr: '' });
+  assert.deepEqual(run(['%', '10', '3']), { status: 0, stdout: '1\n', stderr: '' });
+  assert.deepEqual(run(['^', '2', '8']), { status: 0, stdout: '256\n', stderr: '' });
+  assert.deepEqual(run(['sqrt', '9']), { status: 0, stdout: '3\n', stderr: '' });
 });
 
-test('CLI: exits non-zero and prints a clear message for division by zero', () => {
+test('CLI: exits non-zero and prints clear messages for operation errors', () => {
   const scriptPath = path.join(__dirname, '..', 'calculator.js');
 
-  const res = spawnSync(process.execPath, [scriptPath, '/', '8', '0'], {
+  const divisionByZero = spawnSync(process.execPath, [scriptPath, '/', '8', '0'], {
     encoding: 'utf8',
   });
+  assert.equal(divisionByZero.status, 1);
+  assert.match(divisionByZero.stderr, /division by zero/);
 
-  assert.equal(res.status, 1);
-  assert.match(res.stderr, /division by zero/);
+  const moduloByZero = spawnSync(process.execPath, [scriptPath, '%', '8', '0'], {
+    encoding: 'utf8',
+  });
+  assert.equal(moduloByZero.status, 1);
+  assert.match(moduloByZero.stderr, /modulo by zero/);
+
+  const negativeSqrt = spawnSync(process.execPath, [scriptPath, 'sqrt', '-1'], {
+    encoding: 'utf8',
+  });
+  assert.equal(negativeSqrt.status, 1);
+  assert.match(negativeSqrt.stderr, /square root of negative number/);
 });
 
 test('CLI: shows usage for missing/invalid arguments', () => {

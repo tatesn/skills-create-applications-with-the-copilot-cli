@@ -4,28 +4,37 @@
 /**
  * Node.js CLI Calculator
  *
- * Supported operations (based only on the four basic math operations):
+ * Supported operations:
  *  - addition       (add or +)
  *  - subtraction    (sub or -)
  *  - multiplication (mul or * or x)
  *  - division       (div or /)
+ *  - modulo         (mod or %)
+ *  - power          (pow or ^)
+ *  - square root    (sqrt)
  */
 
 function printUsage() {
   const usage = `Usage:
-  node src/calculator.js <operation> <a> <b>
+  node src/calculator.js <operation> <a> [b]
 
 Operations:
   add | +        addition (a + b)
   sub | -        subtraction (a - b)
   mul | * | x    multiplication (a * b)
   div | /        division (a / b)
+  mod | %        modulo (a % b)
+  pow | ^        exponentiation (a ^ b)
+  sqrt           square root (sqrt(a))
 
 Examples:
   node src/calculator.js add 2 3
   node src/calculator.js sub 10 4
   node src/calculator.js mul 6 7
   node src/calculator.js div 8 2
+  node src/calculator.js mod 10 3
+  node src/calculator.js pow 2 8
+  node src/calculator.js sqrt 9
 `;
   process.stdout.write(usage);
 }
@@ -65,6 +74,17 @@ function normalizeOperation(opRaw) {
     case '/':
       return 'div';
 
+    case 'mod':
+    case '%':
+      return 'mod';
+
+    case 'pow':
+    case '^':
+      return 'pow';
+
+    case 'sqrt':
+      return 'sqrt';
+
     default:
       return null;
   }
@@ -92,6 +112,30 @@ function division(a, b) {
   return a / b;
 }
 
+function modulo(a, b) {
+  if (b === 0) {
+    const err = new Error('modulo by zero');
+    err.code = 'MOD_BY_ZERO';
+    throw err;
+  }
+
+  return a % b;
+}
+
+function power(base, exponent) {
+  return base ** exponent;
+}
+
+function squareRoot(n) {
+  if (n < 0) {
+    const err = new Error('square root of negative number');
+    err.code = 'NEGATIVE_SQRT';
+    throw err;
+  }
+
+  return Math.sqrt(n);
+}
+
 function calculate(operation, a, b) {
   switch (operation) {
     case 'add':
@@ -106,6 +150,15 @@ function calculate(operation, a, b) {
     case 'div':
       return division(a, b);
 
+    case 'mod':
+      return modulo(a, b);
+
+    case 'pow':
+      return power(a, b);
+
+    case 'sqrt':
+      return squareRoot(a);
+
     default:
       throw new Error(`Unsupported operation: ${operation}`);
   }
@@ -114,7 +167,7 @@ function calculate(operation, a, b) {
 function main(argv) {
   const [operationRaw, aRaw, bRaw] = argv;
 
-  if (!operationRaw || aRaw == null || bRaw == null) {
+  if (!operationRaw || aRaw == null) {
     exitWithError('missing required arguments');
     return;
   }
@@ -125,11 +178,19 @@ function main(argv) {
     return;
   }
 
+  const requiresSecondOperand = operation !== 'sqrt';
+  if (requiresSecondOperand && bRaw == null) {
+    exitWithError('missing required arguments');
+    return;
+  }
+
   let a;
   let b;
   try {
     a = parseNumber(aRaw, 'a');
-    b = parseNumber(bRaw, 'b');
+    if (requiresSecondOperand) {
+      b = parseNumber(bRaw, 'b');
+    }
   } catch (e) {
     exitWithError(e.message);
     return;
@@ -139,8 +200,8 @@ function main(argv) {
     const result = calculate(operation, a, b);
     process.stdout.write(`${result}\n`);
   } catch (e) {
-    if (e && e.code === 'DIV_BY_ZERO') {
-      process.stderr.write('Error: division by zero\n');
+    if (e && (e.code === 'DIV_BY_ZERO' || e.code === 'MOD_BY_ZERO' || e.code === 'NEGATIVE_SQRT')) {
+      process.stderr.write(`Error: ${e.message}\n`);
       process.exitCode = 1;
       return;
     }
@@ -160,6 +221,9 @@ module.exports = {
   subtraction,
   multiplication,
   division,
+  modulo,
+  power,
+  squareRoot,
   calculate,
   normalizeOperation,
   parseNumber,
