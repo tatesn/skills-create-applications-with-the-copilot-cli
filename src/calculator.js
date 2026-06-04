@@ -92,6 +92,30 @@ function division(a, b) {
   return a / b;
 }
 
+function modulo(a, b) {
+  if (b === 0) {
+    const err = new Error('modulo by zero');
+    err.code = 'MOD_BY_ZERO';
+    throw err;
+  }
+
+  return a % b;
+}
+
+function power(base, exponent) {
+  return base ** exponent;
+}
+
+function squareRoot(n) {
+  if (n < 0) {
+    const err = new Error('square root of negative number');
+    err.code = 'NEGATIVE_SQRT';
+    throw err;
+  }
+
+  return Math.sqrt(n);
+}
+
 function calculate(operation, a, b) {
   switch (operation) {
     case 'add':
@@ -160,6 +184,9 @@ module.exports = {
   subtraction,
   multiplication,
   division,
+  modulo,
+  power,
+  squareRoot,
   calculate,
   normalizeOperation,
   parseNumber,

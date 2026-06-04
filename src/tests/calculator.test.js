@@ -10,6 +10,9 @@ const {
   subtraction,
   multiplication,
   division,
+  modulo,
+  power,
+  squareRoot,
   calculate,
   normalizeOperation,
   parseNumber,
@@ -47,6 +50,46 @@ test('division: throws a clear error for division by zero', () => {
     assert.ok(err instanceof Error);
     assert.equal(err.message, 'division by zero');
     assert.equal(err.code, 'DIV_BY_ZERO');
+    return true;
+  });
+});
+
+test('modulo: computes remainders correctly (including image example 5 % 2)', () => {
+  assert.equal(modulo(5, 2), 1);
+  assert.equal(modulo(10, 3), 1);
+  assert.equal(modulo(10, 2), 0);
+  assert.equal(modulo(-10, 3), -1);
+  assert.equal(modulo(5.5, 2), 1.5);
+});
+
+test('modulo: throws a clear error for modulo by zero', () => {
+  assert.throws(() => modulo(1, 0), (err) => {
+    assert.ok(err instanceof Error);
+    assert.equal(err.message, 'modulo by zero');
+    assert.equal(err.code, 'MOD_BY_ZERO');
+    return true;
+  });
+});
+
+test('power: computes exponents correctly (including image example 2 ^ 3)', () => {
+  assert.equal(power(2, 3), 8);
+  assert.equal(power(2, 8), 256);
+  assert.equal(power(5, 0), 1);
+  assert.equal(power(9, 0.5), 3);
+  assert.equal(power(2, -1), 0.5);
+});
+
+test('squareRoot: computes roots correctly (including image example √16) and rejects negatives', () => {
+  assert.equal(squareRoot(16), 4);
+  assert.equal(squareRoot(9), 3);
+  assert.equal(squareRoot(0), 0);
+  assert.ok(Object.is(squareRoot(-0), -0));
+  assert.equal(squareRoot(2), Math.sqrt(2));
+
+  assert.throws(() => squareRoot(-1), (err) => {
+    assert.ok(err instanceof Error);
+    assert.equal(err.message, 'square root of negative number');
+    assert.equal(err.code, 'NEGATIVE_SQRT');
     return true;
   });
 });
